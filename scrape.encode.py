@@ -8,6 +8,30 @@ Need something like this at the top of the page:
     //<![CDATA[
 
       google.load("maps", "2");
+      google.load('visualization', '1',{'packages':['corechart']});
+
+      function drawVisualizations() {
+        var divs = document.getElementsByTagName('div');
+        for(var i=0;i<divs.length;i++){
+          var div = divs[i];
+          if( div.className.search('gpsplt')!=-1){
+            var idx = div.className.split('_')[1];
+            var dtbl = eval('dtbl_'+idx);
+            drawVisualization(dtbl,div);
+          }
+        }
+      }
+      function drawVisualization(dT,div) {
+        chart=new google.visualization.ComboChart(div);
+        options={seriesType:'line',
+                 series:{2:{type:'scatter'},3:{type:'scatter'}},
+                 vAxis:{title:'Height (m)'},
+                 hAxis:{title:'Distance (km)'},
+                 legend:{position:'none'}
+                };
+        chart.draw(dT,options);
+      }
+
       function initFunc() {
         var divs = document.getElementsByTagName('div');
         for(var i=0;i<divs.length;i++){
@@ -23,7 +47,6 @@ Need something like this at the top of the page:
             map.addControl(new google.maps.SmallMapControl());
             map.addControl(new google.maps.ScaleControl());
             map.setCenter(mapCenter, mapZoom, G_PHYSICAL_MAP);
-
             var polyline=0;
             if(eval('typeof(polyline_'+idx+')')!='undefined') polyline=eval('polyline_'+idx);
             if(polyline){
@@ -33,7 +56,7 @@ Need something like this at the top of the page:
               while(1){
                 if(eval('typeof(polyline_'+idx+'_'+j+')')!='undefined'){
                   polyline=eval('polyline_'+idx+'_'+j);
-                } else {
+                } else {javascript:;
                   polyline=0;
                 }
                 if(!polyline){
@@ -46,8 +69,11 @@ Need something like this at the top of the page:
             }
           }
         }
+        drawVisualizations()
       }
       google.setOnLoadCallback(initFunc);
+    //]]>
+    </script>
     //]]>
     </script>
 #-------------
