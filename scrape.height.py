@@ -37,7 +37,7 @@ for inF in inNames:
     for pt in pts:
         line.append('%s,%s'%(pt.get('lat'),pt.get('lon')))
         tme=pt.find(vers+'time')
-        if tme:
+        if hasattr(tme,'text'):
             t = tme.text
             times.append(datetime.datetime.strptime(t,'%Y-%m-%dT%H:%M:%SZ'))
     data.append((line,times))
