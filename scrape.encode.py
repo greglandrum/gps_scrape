@@ -170,7 +170,9 @@ for inF in inNames:
         if not pts:
             pts = et.findall('.//{http://www.topografix.com/GPX/1/0}rtept')
             if not pts:
-                raise ValueError,'could not find any points'
+                pts = et.findall('.//{http://www.topografix.com/GPX/1/1}rtept')
+                if not pts:
+                    raise ValueError,'could not find any points'
     for pt in pts:
         line.append((float(pt.get('lat')),float(pt.get('lon'))))
     data.append(line)
