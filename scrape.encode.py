@@ -81,7 +81,7 @@ Need something like this at the top of the page:
 
 
 """
-import random,cPickle,urllib,zlib,base64
+import random,urllib,zlib,base64
 idx = random.randint(1,10000000)
 import glineenc
 import sys,re,os
@@ -162,7 +162,7 @@ from xml.etree import cElementTree as ET
 data=[]
 for inF in inNames:
     line=[]
-    inF = file(inF,'ru')
+    inF = open(inF,'r')
     et = ET.ElementTree(file=inF)
     pts = et.findall('.//{http://www.topografix.com/GPX/1/1}trkpt')
     if not pts:
@@ -172,7 +172,7 @@ for inF in inNames:
             if not pts:
                 pts = et.findall('.//{http://www.topografix.com/GPX/1/1}rtept')
                 if not pts:
-                    raise ValueError,'could not find any points'
+                    raise ValueError('could not find any points')
     for pt in pts:
         line.append((float(pt.get('lat')),float(pt.get('lon'))))
     data.append(line)
@@ -182,8 +182,12 @@ totN=0
 pointsText=""
 for i,line in enumerate(data):    
     pairs = [(pt[0],pt[1]) for pt in line]
+    # no sense keeping more than 2K pairs:
+    if len(pairs)>2000:
+        skip = len(pairs)//2000
+        pairs = pairs[:len(pairs):skip]
     txtPairs=["%.6f %.6f"%(x,y) for x,y in pairs]
-    ptsPkl = base64.b64encode(zlib.compress(str(txtPairs)))
+    ptsPkl = base64.b64encode(zlib.compress(str(txtPairs).encode('utf-8')))
     encoding,levels = glineenc.encode_pairs(pairs)
     encoding=encoding.replace('\\','\\\\')
     for pt in line:
@@ -201,4 +205,5 @@ for i,line in enumerate(data):
 latit,longit=center
 latit /= totN
 longit /= totN
-print >>outF,template%locals()
+print(template%locals(),file=outF)
+print("NPOINTS:",len(txtPairs))
