@@ -92,6 +92,7 @@ lineWidth = 2
 zoom=11
 mapWidth=400
 mapHeight=400
+maxPairs = 2000
 
 if len(sys.argv)==3 and sys.argv[2]!='-' and os.path.splitext(sys.argv[2])[-1]!='.gpx':
     outF = file(sys.argv[2],'w+')
@@ -183,8 +184,8 @@ pointsText=""
 for i,line in enumerate(data):    
     pairs = [(pt[0],pt[1]) for pt in line]
     # no sense keeping more than 2K pairs:
-    if len(pairs)>2000:
-        skip = len(pairs)//2000
+    if len(pairs)>maxPairs:
+        skip = len(pairs)//maxPairs
         pairs = pairs[:len(pairs):skip]
     txtPairs=["%.6f %.6f"%(x,y) for x,y in pairs]
     ptsPkl = base64.b64encode(zlib.compress(str(txtPairs).encode('utf-8')))
@@ -206,4 +207,4 @@ latit,longit=center
 latit /= totN
 longit /= totN
 print(template%locals(),file=outF)
-print("NPOINTS:",len(txtPairs))
+
