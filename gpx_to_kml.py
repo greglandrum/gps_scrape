@@ -21,7 +21,7 @@ if options.snowshoe:
 
 from xml.etree import cElementTree as ET
 def doFile(name,options,idx):
-    inF = file(name,'ru')
+    inF = open(name,'r')
     et = ET.ElementTree(file=inF)
     nms = et.findall('.//{http://www.topografix.com/GPX/1/1}name')
     if nms:
@@ -31,7 +31,7 @@ def doFile(name,options,idx):
     if not pts:
         pts = et.findall('.//{http://www.topografix.com/GPX/1/0}trkpt')
         if not pts:
-            raise ValueError,'could not find any points'
+            raise ValueError('could not find any points')
     data=[]
     for pt in pts:
         data.append((float(pt.get('lat')),float(pt.get('lon'))))
@@ -85,12 +85,14 @@ if options.outFile=='-':
     outF = sys.stdout
 else:
     if options.outFile:
-        outF = file(options.outFile,'w+')
+        outF = open(options.outFile,'w+')
     else:
         fName = os.path.splitext(args[0])[0]+'.kml'
-        outF = file(fName,'w+')
+        outF = open(fName,'w+')
 
-styles=["""<Style id="trackColor%(idx)d">
+styles=[]
+for idx in range(1,len(args)+1):
+    styles.append("""<Style id="trackColor%(idx)d">
       <LineStyle>
         <color>%(lineColor)s</color>
         <width>%(lineWidth)s</width>
@@ -100,7 +102,7 @@ styles=["""<Style id="trackColor%(idx)d">
             <href>%(dotURL)s</href> 
           </Icon> 
         </IconStyle> 
-    </Style>"""%locals() for idx in range(1,len(args)+1)]
+    </Style>"""%globals())
 styles = '\n'.join(styles)
 
 template="""<?xml version="1.0" encoding="UTF-8"?>
@@ -111,4 +113,4 @@ template="""<?xml version="1.0" encoding="UTF-8"?>
 </Document>
 </kml>
 """
-print >>outF,template%locals()
+print(template%locals(),file=outF)
