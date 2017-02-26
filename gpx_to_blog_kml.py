@@ -17,13 +17,13 @@ if not options.inFiles:
 
 lineWidth = 3
 lineColor = "EEFF4444" # <- color order is aabbggrr
-dotURL="http://www.google.com/intl/en_us/mapfiles/ms/icons/green-dot.png"
+dotURL="https://api3.geo.admin.ch/color/255,0,0/marker-24@2x.png"
 if options.snowshoe:    
   lineColor = "CCFF3333" # <- color order is aabbggrr
-  dotURL="http://www.google.com/intl/en_us/mapfiles/ms/icons/blue-dot.png"
+  dotURL="https://api3.geo.admin.ch/color/255,0,0/marker-24@2x.png"
 
 from xml.etree import cElementTree as ET
-def doFile(name,options,idx):
+def doFile(name,options,idx,includeMarker=False):
     inF = open(name,'r')
     et = ET.ElementTree(file=inF)
     nms = et.findall('.//{http://www.topografix.com/GPX/1/1}name')
@@ -41,15 +41,36 @@ def doFile(name,options,idx):
 
     description = name
 
-    trackTemplate="""
+    ldotURL = dotURL
+    llineColor = lineColor
+    markTemplate="""
     <Placemark>
-        <name>%(name)s</name>
-        <description>%(description)s</description>
-        <styleUrl>#trackColor%(idx)s</styleUrl>
+        <name></name>
+        <description></description>
+      <Style>
+        <IconStyle>
+          <Icon>
+            <href>%(ldotURL)s</href>
+            <gx:w>48</gx:w><gx:h>48</gx:h>
+          </Icon>
+          <hotSpot x="24" y="24" xunits="pixels" yunits="pixels"/>
+        </IconStyle>
+        <LabelStyle>
+          <color>%(llineColor)s</color>
+        </LabelStyle>
+      </Style>
+
         <Point>
           <coordinates>%(markerX)f,%(markerY)f</coordinates>
         </Point>
-%(lineString)s
+    </Placemark>
+    """
+    trackTemplate="""
+    <Placemark>
+        <name>%(name)s-track</name>
+        <description>%(description)s-track</description>
+        <styleUrl>#trackColor%(idx)d</styleUrl>
+        %(lineString)s
     </Placemark>
     """
     txtPairs=["%.6f,%.6f"%(pt[1],pt[0]) for pt in data]
@@ -79,12 +100,14 @@ def doFile(name,options,idx):
     else:
         lineString=""
     track = trackTemplate%locals()
+    if includeMarker:
+        track += markTemplate%locals()
     return track,center
 
-procData = [doFile(arg,options,idx+1) for (idx,arg) in enumerate(options.inFiles)]
+procData = [doFile(arg,options,idx+1,idx) for (idx,arg) in enumerate(options.inFiles)]
 tracks,centers = zip(*procData)
 tracks = '\n'.join(tracks)
-converter = wgs84_ch1903.GPSConverter()
+
 if options.outFile=='-':
     outF = sys.stdout
 else:
@@ -101,16 +124,11 @@ for idx in range(1,len(options.inFiles)+1):
         <color>%(lineColor)s</color>
         <width>%(lineWidth)s</width>
       </LineStyle>
-        <IconStyle> 
-          <Icon> 
-            <href>%(dotURL)s</href> 
-          </Icon> 
-        </IconStyle> 
     </Style>"""%globals())
 styles = '\n'.join(styles)
 
 template="""<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/kml/2.2 https://developers.google.com/kml/schema/kml22gx.xsd">
 <Document>
     %(styles)s
 %(tracks)s
@@ -118,8 +136,16 @@ template="""<?xml version="1.0" encoding="UTF-8"?>
 </kml>
 """
 print(template%locals(),file=outF)
+
+center = [0,0]
+for c in centers:
+    center[0] += c[0]
+    center[1] += c[1]
+center[0]/=len(centers)
+center[1]/=len(centers)
+converter = wgs84_ch1903.GPSConverter()
 if not options.outFile:
-    y,x,h = converter.WGS84toLV03(centers[0][0],centers[0][1],0)
+    y,x,h = converter.WGS84toLV03(center[0],center[1],0)
     qname = parse.quote_plus('http://landrumdecker.com/kml/%s'%fName)
     blog_text="<iframe src='https://map.geo.admin.ch/embed.html?topic=ech&lang=en&bgLayer=ch.swisstopo.pixelkarte-farbe&X={0:.2f}&Y={1:.2f}&zoom=4&layers=KML%7C%7C{2}' width='100%' height='300' frameborder='0' style='border:0'></iframe>".format(x,y,qname)
     print(blog_text)
