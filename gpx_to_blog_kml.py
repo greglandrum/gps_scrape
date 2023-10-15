@@ -12,6 +12,7 @@ parser.add_argument('--outFile', '--outF', '-o', default='')
 parser.add_argument('--snowshoe', '-s', action='store_true', default=False)
 parser.add_argument('--avgMarker', action='store_true', default=False)
 parser.add_argument('--noTrack', '-t', action='store_true', default=False)
+parser.add_argument('--noCopy',  action='store_true', default=False)
 parser.add_argument('inFiles', nargs='+')
 
 options = parser.parse_args()
@@ -44,7 +45,7 @@ def estimate_profile(pts, nPtsToAvg=52):
         window = elevs[startIdx:endIdx]
         window.remove(min(window))
         window.remove(max(window))
-        mean = round(sum(window) / len(window), 0)
+        mean = round(sum(window) / len(window), 3)
         maxEle = max(mean, maxEle)
         minEle = min(mean, minEle)
         if last is not None:
@@ -174,7 +175,8 @@ template = """<?xml version="1.0" encoding="UTF-8"?>
 </Document>
 </kml>
 """
-print(template % locals(), file=outF)
+if not options.noCopy:
+    print(template % locals(), file=outF)
 
 center = [0, 0]
 for c in centers:
@@ -185,7 +187,8 @@ center[1] /= len(centers)
 converter = wgs84_ch1903.GPSConverter()
 if not options.outFile:
     y, x, h = converter.WGS84toLV03(center[0], center[1], 0)
-    qname = parse.quote_plus('http://landrumdecker.com/kml/%s' % fName)
+    qname = parse.quote_plus('https://landrumdecker.com/kml/%s' % fName)
+    print(f'https://landrumdecker.com/kml/{fName}')
     blog_text = "<iframe src='https://map.geo.admin.ch/embed.html?topic=ech&lang=en&bgLayer=ch.swisstopo.pixelkarte-farbe&X={0:.2f}&Y={1:.2f}&zoom=4&layers=KML%7C%7C{2}' width='100%' height='300' frameborder='0' style='border:0'></iframe>".format(
         x, y, qname)
     print(blog_text)
